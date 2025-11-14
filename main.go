@@ -1,12 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"log"
-	"strconv"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -20,6 +21,14 @@ func main() {
 	a := app.New()
 	w := a.NewWindow("Duri")
 
+	logFileURL := storage.NewFileURI("./fuellogs.csv")
+
+	logFile, err := storage.Appender(logFileURL)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer logFile.Close()
+
 	odoInput := widget.NewEntry()
 	fuelInput := widget.NewEntry()
 	dateInput := &widget.DateEntry{}
@@ -31,21 +40,11 @@ func main() {
 			{Text: "Date", Widget: dateInput},
 		},
 		OnSubmit: func() {
-			log.Println("Form submitted:", odoInput.Text, fuelInput.Text, dateInput.Text)
-			odometer, err := strconv.Atoi(odoInput.Text)
+			dump := fmt.Appendf(make([]byte, 0), "%s,%s,%s\n", odoInput.Text, fuelInput.Text, dateInput.Text)
+			_, err = logFile.Write(dump)
 			if err != nil {
-				panic(err)
+				log.Fatalln(err)
 			}
-			fuel, err := strconv.ParseFloat(fuelInput.Text, 64)
-			if err != nil {
-				panic(err)
-			}
-			date, err := time.Parse("02/01/2006", dateInput.Text)
-			if err != nil {
-				panic(err)
-			}
-			fl := FuelLog{odometer, fuel, date}
-			log.Println(fl)
 		},
 	}
 
