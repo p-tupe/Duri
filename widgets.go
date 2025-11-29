@@ -8,10 +8,12 @@ import (
 	"log"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
-func GetForm(logFile fyne.URIWriteCloser) *widget.Form {
+func GetForm(logFile fyne.URIWriteCloser, showList func()) *widget.Form {
 	odoInput := widget.NewEntry()
 	fuelInput := widget.NewEntry()
 	dateInput := &widget.DateEntry{}
@@ -28,11 +30,15 @@ func GetForm(logFile fyne.URIWriteCloser) *widget.Form {
 			if err != nil {
 				log.Fatalln(err)
 			}
+			showList()
+		},
+		OnCancel: func() {
+			showList()
 		},
 	}
 }
 
-func GetList(logFile fyne.URIReadCloser) *widget.List {
+func GetList(logFile fyne.URIReadCloser, showForm func()) *fyne.Container {
 	fls := []FuelLog{}
 
 	reader := csv.NewReader(logFile)
@@ -48,7 +54,7 @@ func GetList(logFile fyne.URIReadCloser) *widget.List {
 		fls = append(fls, NewFuelLog(row[0], row[1], row[2]))
 	}
 
-	return widget.NewList(
+	list := widget.NewList(
 		func() int {
 			return len(fls)
 		},
@@ -58,4 +64,10 @@ func GetList(logFile fyne.URIReadCloser) *widget.List {
 		func(i widget.ListItemID, o fyne.CanvasObject) {
 			o.(*widget.Label).SetText(fls[i].String())
 		})
+
+	btn := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
+		showForm()
+	})
+
+	return container.NewVBox(list, btn)
 }
